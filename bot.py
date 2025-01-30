@@ -6,21 +6,28 @@ import requests
 import datetime
 import os
 import time
+from dotenv import load_dotenv  # Import the load_dotenv function
 
-# Replace with your MongoDB connection string
-client = pymongo.MongoClient("mongodb+srv://Tanisha:Tanisha214@cluster0.tpvdr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+# Load environment variables from .env file
+load_dotenv()
+
+# Get environment variables
+MONGODB_URI = os.getenv("MONGODB_URI")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+
+# MongoDB connection
+client = pymongo.MongoClient(MONGODB_URI)
 db = client["telegram_bot"]
 users_collection = db["users"]
 chat_history_collection = db["chat_history"]
 files_collection = db["files"]
 
-# Replace with your Gemini API key
-genai.configure(api_key="AIzaSyCM1kX0KwzYzK37A22VJ_nleXPd9XyOAbk")
+# Configure Gemini API
+genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-pro')
 
-# Replace with your Telegram bot token
-TELEGRAM_TOKEN = "7577203683:AAEVXnDdKn2C6E1q5MVPSxFV6F6DeCdhBAU"
-
+# Rest of your code remains the same...
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
     user_data = {
@@ -30,21 +37,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "phone_number": None
     }
     users_collection.update_one({"chat_id": user.id}, {"$set": user_data}, upsert=True)
-    await update.message.reply_text("Welcome! Please share your contact information.")
+    await update.message.reply_text("Welcome! Please share your phone number using the contact button.")
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
-
-    # Check if update contains contact data
-    if not update.message.contact:
-        print("⚠️ No contact data received!")
-        await update.message.reply_text("❌ Error: No contact data received.")
-        return
-
     phone_number = update.message.contact.phone_number
     
-    # Debugging: Print the received phone number
-    print(f"📞 Phone number received: {phone_number}")
+    # Debug: Print the phone number
+    print(f"Phone number received: {phone_number}")
     
     # Update MongoDB
     result = users_collection.update_one(
@@ -53,12 +53,11 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         upsert=True
     )
     
-    # Debugging: Print MongoDB update result
-    print(f"📌 MongoDB update result: {result.modified_count} documents updated.")
+    # Debug: Print MongoDB update result
+    print(f"MongoDB update result: {result.modified_count} documents updated.")
     
     # Send confirmation message
-    await update.message.reply_text("✅ Thank you! Your phone number has been saved.")
-
+    await update.message.reply_text("Thank you! Your phone number has been saved.")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_input = update.message.text
@@ -97,14 +96,27 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file = await update.message.photo[-1].get_file()
     file_path = f"downloads/{file.file_id}.jpg"
+    
+    # Ensure the downloads folder exists
+    os.makedirs("downloads", exist_ok=True)
+    
+    # Download the image file
     await file.download_to_drive(file_path)
+    
+    # Read the image file as binary data
+    with open(file_path, "rb") as image_file:
+        image_data = image_file.read()
+    
     max_retries = 3  # Number of retries
     retry_delay = 2  # Delay between retries (in seconds)
 
     for attempt in range(max_retries):
         try:
-            # Attempt to generate a description using the Gemini API
-            response = model.generate_content(f"Describe this image: {file_path}")
+            # Use a detailed prompt for image analysis
+            prompt = "Describe this image in detail, including the objects, people, colors, and any other relevant information."
+            
+            # Pass the image data directly to the Gemini API
+            response = model.generate_content([prompt, image_data])
             
             # Save file metadata to MongoDB
             file_data = {
@@ -128,6 +140,7 @@ async def handle_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 # Wait before retrying
                 time.sleep(retry_delay)
+
 async def web_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.message.text.split("/websearch ")[1]
     search_url = f"https://api.duckduckgo.com/?q={query}&format=json"

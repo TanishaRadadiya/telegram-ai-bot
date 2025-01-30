@@ -1,0 +1,17 @@
+AIzaSyCM1kX0KwzYzK37A22VJ_nleXPd9XyOAbk  gemini api key
+7577203683:AAEVXnDdKn2C6E1q5MVPSxFV6F6DeCdhBAU tele token
+mongodb+srv://Tanisha:Tanisha214@cluster0.tpvdr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0 
+
+Subject: Submission for AI Automation Internship - Telegram AI Bot
+
+Hello,
+
+I have completed the Telegram AI Bot project as part of the AI Automation Internship assessment. Below are the links to my submission:
+
+- GitHub Repository: [Insert GitHub Link]
+- Loom Video Demo:https:https://www.loom.com/share/88bfbea3feb34e1189d6ed340a7704ba?sid=b6e4fec2-2cf3-45bb-9dca-dece3efd7e3d
+
+Please let me know if you need anything else.
+
+Best regards,
+Tanisha
